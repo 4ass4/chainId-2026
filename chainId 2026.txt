@@ -1,0 +1,129 @@
+ТЗ: Тестовый блокчейн для демонстрации ПВТ
+Название: DemoChain BY (chainId: 2026)
+Цель: Живой демо-блокчейн за 1 неделю для презентации Набсовету ПВТ
+Срок: 5 рабочих дней
+Бюджет: €100 (1 сервер) + 40 часов dev
+
+1. РЕЗУЛЬТАТ (что покажем ПВТ)
+text
+🌐 http://demo.neotek.by:4000 ← Ваш блокчейн онлайн!
+✅ Explorer: блоки пишутся каждые 2 сек  
+✅ MetaMask: баланс 1000 CONS токенов
+✅ TON bridge: "TON → CONS" (mock)
+✅ "BYNEX vs Currency" ордера
+✅ Kill 1 нода → продолжает работать
+2. ТРЕБОВАНИЯ К ТЕСТОВОМУ БЛОКЧЕЙНУ
+Функция	Критерий приемки
+Запуск	docker-compose up = готово за 2 мин
+Скорость	Блоки каждые 2 сек, 500 TPS
+Интерфейс	Blockscout explorer + простая страница
+Биржи	Симуляция BYNEX/Currency ордеров
+Bridge	Mock TON → CONS токен
+Надежность	3 ноды, kill 1 = продолжает работать
+3. ТЕХНИЧЕСКИЙ СТЕК (простой)
+text
+BLOCKCHAIN: Hyperledger Besu (docker pull hyperledger/besu)
+EXPLOREР: Blockscout (docker pull blockscout)
+TOKENS: 1 Solidity контракт (ERC20)
+API: Node.js Express (REST для демо)
+INFRA: 1x Hetzner CPX21 (€30/мес)
+4. ПОШАГОВЫЙ ПЛАН (5 дней)
+День 1: Инфраструктура
+text
+[ ] 1. Заказать Hetzner CPX21 (8CPU/16GB/160GB)
+[ ] 2. Установить Docker + docker-compose
+[ ] 3. docker pull hyperledger/besu:latest
+[ ] 4. Создать genesis.json (chainId=2026, QBFT)
+[ ] 5. docker-compose up → localhost:8545
+Результат: Блокчейн пишет блоки!
+
+День 2: Токены + Explorer
+text
+[ ] 1. Deploy ERC20 ConsortiumToken (10 строк Solidity)
+[ ] 2. docker run blockscout/blockscout:1.4
+[ ] 3. Настроить explorer → http://IP:4000
+[ ] 4. MetaMask connect (RPC: IP:8545)
+Результат: Видим блоки, баланс, explorer!
+
+День 3: TON Bridge Mock
+text
+[ ] 1. Создать BridgeMock.sol (lock/mint логика)
+[ ] 2. Mock TON API (Node.js → fake TON tx)
+[ ] 3. Frontend: кнопка "Bridge TON → CONS"
+[ ] 4. Демо: TON → наш токен (2 сек)
+День 4: Биржи симуляция
+text
+[ ] 1. React/Vue страница:
+   - Левый блок: "BYNEX продает 1000 TON"  
+   - Правый блок: "Currency покупает 1000 TON"
+   - Кнопка "Исполнить" → tx в блокчейне
+[ ] 2. REST API: /orders, /execute
+День 5: Надежность + Презентация
+text
+[ ] 1. 3 ноды (docker-compose scale besu=3)
+[ ] 2. Kill тест: docker kill besu_1 → продолжает
+[ ] 3. Дашборд: TPS, active nodes, volume
+[ ] 4. Видео: 2 мин screencast
+[ ] 5. Документация: README + ПВТ pitch
+5. ДЕМО СЦЕНАРИЙ ДЛЯ ПВТ (7 минут)
+text
+МИНУТА 1: "Вот наш блокчейн онлайн!"
+→ Показать explorer: блоки пишутся
+
+МИНУТА 2: "Вот токен CONSORTIUM"  
+→ MetaMask: баланс 1000 CONS
+
+МИНУТА 3: "TON → CONS за 2 секунды"
+→ Клик bridge → tx в explorer
+
+МИНУТА 4: "BYNEX продает Currency"
+→ Симуляция ордеров → исполнение
+
+МИНУТА 5: "Надежность"  
+→ docker kill node1 → "все работает!"
+
+МИНУТА 6: "Масштаб"  
+→ График: 500 TPS, 3 active nodes
+
+МИНУТА 7: "Готово к production!"
+→ "5 серверов = все резиденты ПВТ"
+6. INFRA (docker-compose.yml)
+text
+version: '3.8'
+services:
+  besu:
+    image: hyperledger/besu:latest
+    ports:
+      - "8545:8545"  # RPC
+      - "30303:30303" # P2P
+    volumes:
+      - ./genesis.json:/config/genesis.json
+    command: >
+      --data-path=/data 
+      --genesis-file=/config/genesis.json
+      --rpc-http-enabled --rpc-http-api=ETH,NET,QBFT
+      --host-allowlist=* --p2p-port=30303
+
+  explorer:
+    image: blockscout/blockscout:latest
+    ports:
+      - "4000:80"
+    environment:
+      - BLOCKSCOUT_PROTOCOL=http
+      - BLOCKSCOUT_HOST=localhost
+      - ETH_NODE_URL=http://besu:8545
+7. GENESIS.JSON (готовый файл)
+[download file: genesis_demo.json]
+
+8. ДЕЛИВЕРЕБЛС
+text
+📁 GitHub repo:
+├── docker-compose.yml (1 команда = готово)
+├── genesis.json (chainId 2026)
+├── contracts/ConsortiumToken.sol
+├── api-demo/ (биржи симуляция)
+├── demo.mp4 (2 мин видео)
+└── README.md (инструкция ПВТ)
+
+🌐 Demo: http://demo.neotek.by:4000
+🔗 MetaMask RPC: http://IP:8545
