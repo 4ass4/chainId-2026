@@ -8,7 +8,14 @@ mkdir -p genesis-out
 chmod 777 genesis-out
 
 echo "Generating genesis and validator keys..."
-docker compose -f docker-compose.genesis.yml --profile gen run --rm --user 0 genesis-generator
+docker run --rm --user root \
+  -v "$(pwd)/qbftConfigFile.json:/config/qbftConfigFile.json:ro" \
+  -v "$(pwd)/genesis-out:/output" \
+  hyperledger/besu:24.8.0 \
+  operator generate-blockchain-config \
+  --config-file=/config/qbftConfigFile.json \
+  --to=/output \
+  --private-key-file-name=key
 
 if [ ! -f genesis-out/genesis.json ]; then
   echo "Genesis generation failed"
