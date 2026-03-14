@@ -3,6 +3,9 @@ set -e
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
+mkdir -p networkFiles
+chmod 777 networkFiles
+
 echo "Generating genesis and validator keys..."
 docker compose -f docker-compose.genesis.yml --profile gen run --rm genesis-generator
 

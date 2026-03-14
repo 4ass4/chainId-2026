@@ -2,6 +2,7 @@ services:
   genesis-generator:
     image: hyperledger/besu:24.8.0
     container_name: genesis-gen
+    user: root
     volumes:
       - .:/workspace
     working_dir: /workspace
