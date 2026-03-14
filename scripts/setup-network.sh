@@ -5,20 +5,19 @@ cd "$PROJECT_ROOT"
 
 rm -rf genesis-out
 mkdir -p genesis-out
-chmod 777 genesis-out
 
 echo "Generating genesis and validator keys..."
-chown 1000:1000 genesis-out 2>/dev/null || true
-docker run --rm --user 1000:1000 \
+GEN_CONTAINER="besu-genesis-$$"
+docker run --name "$GEN_CONTAINER" \
   -v "$(pwd)/qbftConfigFile.json:/config/config.json:ro" \
-  -v "$(pwd)/genesis-out:/workspace/networkFiles" \
-  -e JAVA_OPTS="-Duser.dir=/workspace" \
-  -w /workspace \
   hyperledger/besu:24.8.0 \
   operator generate-blockchain-config \
   --config-file=/config/config.json \
-  --to=/workspace/networkFiles \
+  --to=/tmp/genesis-out \
   --private-key-file-name=key
+
+docker cp "$GEN_CONTAINER:/tmp/genesis-out/." ./genesis-out/
+docker rm "$GEN_CONTAINER" >/dev/null 2>&1
 
 if [ ! -f genesis-out/genesis.json ]; then
   echo "Genesis generation failed"

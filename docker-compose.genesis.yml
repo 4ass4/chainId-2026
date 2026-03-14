@@ -1,11 +1,2 @@
-services:
-  genesis-generator:
-    image: hyperledger/besu:24.8.0
-    container_name: genesis-gen
-    user: root
-    volumes:
-      - ./qbftConfigFile.json:/config/qbftConfigFile.json:ro
-      - ./genesis-out:/output
-    command: operator generate-blockchain-config --config-file=/config/qbftConfigFile.json --to=/output --private-key-file-name=key
-    profiles:
-      - gen
+# Use scripts/setup-network.sh instead - run: ./scripts/setup-network.sh
+# This file kept for reference only.
