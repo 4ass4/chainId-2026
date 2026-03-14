@@ -28,8 +28,28 @@ curl -X POST -d '{"jsonrpc":"2.0","method":"qbft_getValidatorsByBlockNumber","pa
   -H "Content-Type: application/json" http://localhost:8545
 ```
 
+## Деплой токена CONS
+
+```bash
+npm install
+export RPC_URL=http://localhost:8545
+export DEPLOYER_PRIVATE_KEY=0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3
+npx hardhat run scripts/deploy-token.js --network demochain
+```
+
+(Ключ — pre-funded аккаунт из genesis, только для dev.)
+
+## Blockscout
+
+Клонировать [blockscout/blockscout](https://github.com/blockscout/blockscout), в `docker-compose` задать:
+
+- `ETHEREUM_JSONRPC_VARIANT=besu`
+- `ETHEREUM_JSONRPC_HTTP_URL=http://HOST:8545`
+- `INDEXER_DISABLE_PENDING_TRANSACTIONS_FETCHER=true`
+
 ## Структура
 
-- `qbftConfigFile.json` — конфиг для genesis (chainId 2026)
-- `scripts/setup-network.sh` — генерация genesis + ключей + подготовка нод
-- `docker-compose.yml` — 4 ноды Besu QBFT
+- `qbftConfigFile.json` — конфиг genesis (chainId 2026)
+- `scripts/setup-network.sh` — генерация genesis + ключей
+- `contracts/ConsortiumToken.sol` — ERC20 CONS
+- `scripts/deploy-token.js` — деплой и mint 1000 CONS

@@ -1,0 +1,16 @@
+{
+  "name": "chainid-2026",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "deploy:token": "node scripts/deploy-token.js",
+    "compile": "hardhat compile"
+  },
+  "dependencies": {
+    "ethers": "^6.9.0"
+  },
+  "devDependencies": {
+    "hardhat": "^2.19.0",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0"
+  }
+}
