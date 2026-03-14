@@ -8,13 +8,16 @@ mkdir -p genesis-out
 chmod 777 genesis-out
 
 echo "Generating genesis and validator keys..."
-docker run --rm --user root \
-  -v "$(pwd)/qbftConfigFile.json:/config/qbftConfigFile.json:ro" \
-  -v "$(pwd)/genesis-out:/output" \
+chown 1000:1000 genesis-out 2>/dev/null || true
+docker run --rm --user 1000:1000 \
+  -v "$(pwd)/qbftConfigFile.json:/config/config.json:ro" \
+  -v "$(pwd)/genesis-out:/workspace/networkFiles" \
+  -e JAVA_OPTS="-Duser.dir=/workspace" \
+  -w /workspace \
   hyperledger/besu:24.8.0 \
   operator generate-blockchain-config \
-  --config-file=/config/qbftConfigFile.json \
-  --to=/output \
+  --config-file=/config/config.json \
+  --to=/workspace/networkFiles \
   --private-key-file-name=key
 
 if [ ! -f genesis-out/genesis.json ]; then
