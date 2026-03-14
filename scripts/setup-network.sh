@@ -4,16 +4,20 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 rm -rf networkFiles
+mkdir -p networkFiles
 
 echo "Generating genesis and validator keys..."
-docker run --rm --user 0 --entrypoint "" \
-  -v "$(pwd):/workspace" \
-  -w /workspace \
+GEN_CONTAINER="besu-genesis-$$"
+docker run --name "$GEN_CONTAINER" --user root \
+  -v "$(pwd)/qbftConfigFile.json:/config/config.json:ro" \
   hyperledger/besu:24.8.0 \
   besu operator generate-blockchain-config \
-  --config-file=/workspace/qbftConfigFile.json \
-  --to=/workspace/networkFiles \
+  --config-file=/config/config.json \
+  --to=/tmp/networkFiles \
   --private-key-file-name=key
+
+docker cp "$GEN_CONTAINER:/tmp/networkFiles/." ./networkFiles/
+docker rm "$GEN_CONTAINER" 2>/dev/null || true
 
 if [ ! -f networkFiles/genesis.json ]; then
   echo "Genesis generation failed"
