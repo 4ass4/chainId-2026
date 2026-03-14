@@ -1,0 +1,122 @@
+services:
+  besu-1:
+    image: hyperledger/besu:24.8.0
+    container_name: besu-1
+    hostname: besu-1
+    ports:
+      - "8545:8545"
+      - "30303:30303"
+    volumes:
+      - ./genesis.json:/config/genesis.json:ro
+      - ./node-1/data:/data
+    command:
+      - --data-path=/data
+      - --genesis-file=/config/genesis.json
+      - --rpc-http-enabled
+      - --rpc-http-api=ETH,NET,WEB3,QBFT
+      - --rpc-http-host=0.0.0.0
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --p2p-port=30303
+      - --nat-method=DOCKER
+      - --profile=ENTERPRISE
+    restart: unless-stopped
+    networks:
+      - besu-net
+
+  besu-2:
+    image: hyperledger/besu:24.8.0
+    container_name: besu-2
+    hostname: besu-2
+    ports:
+      - "8546:8545"
+      - "30304:30303"
+    volumes:
+      - ./genesis.json:/config/genesis.json:ro
+      - ./node-2/data:/data
+    env_file:
+      - .env.besu
+    command:
+      - --data-path=/data
+      - --genesis-file=/config/genesis.json
+      - --bootnodes=${NODE1_ENODE}
+      - --rpc-http-enabled
+      - --rpc-http-api=ETH,NET,WEB3,QBFT
+      - --rpc-http-host=0.0.0.0
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --p2p-port=30303
+      - --rpc-http-port=8545
+      - --nat-method=DOCKER
+      - --profile=ENTERPRISE
+    depends_on:
+      - besu-1
+    restart: unless-stopped
+    networks:
+      - besu-net
+
+  besu-3:
+    image: hyperledger/besu:24.8.0
+    container_name: besu-3
+    hostname: besu-3
+    ports:
+      - "8547:8545"
+      - "30305:30303"
+    volumes:
+      - ./genesis.json:/config/genesis.json:ro
+      - ./node-3/data:/data
+    env_file:
+      - .env.besu
+    command:
+      - --data-path=/data
+      - --genesis-file=/config/genesis.json
+      - --bootnodes=${NODE1_ENODE}
+      - --rpc-http-enabled
+      - --rpc-http-api=ETH,NET,WEB3,QBFT
+      - --rpc-http-host=0.0.0.0
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --p2p-port=30303
+      - --rpc-http-port=8545
+      - --nat-method=DOCKER
+      - --profile=ENTERPRISE
+    depends_on:
+      - besu-1
+    restart: unless-stopped
+    networks:
+      - besu-net
+
+  besu-4:
+    image: hyperledger/besu:24.8.0
+    container_name: besu-4
+    hostname: besu-4
+    ports:
+      - "8548:8545"
+      - "30306:30303"
+    volumes:
+      - ./genesis.json:/config/genesis.json:ro
+      - ./node-4/data:/data
+    env_file:
+      - .env.besu
+    command:
+      - --data-path=/data
+      - --genesis-file=/config/genesis.json
+      - --bootnodes=${NODE1_ENODE}
+      - --rpc-http-enabled
+      - --rpc-http-api=ETH,NET,WEB3,QBFT
+      - --rpc-http-host=0.0.0.0
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --p2p-port=30303
+      - --rpc-http-port=8545
+      - --nat-method=DOCKER
+      - --profile=ENTERPRISE
+    depends_on:
+      - besu-1
+    restart: unless-stopped
+    networks:
+      - besu-net
+
+networks:
+  besu-net:
+    driver: bridge

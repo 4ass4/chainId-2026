@@ -1,6 +1,7 @@
 node_modules/
 .env
 .env.local
+.env.besu
 *.log
 .DS_Store
 .idea/
@@ -9,3 +10,5 @@ __pycache__/
 *.pyc
 dist/
 build/
+networkFiles/
+node-*/data/
