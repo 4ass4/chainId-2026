@@ -8,7 +8,7 @@ mkdir -p genesis-out
 chmod 777 genesis-out
 
 echo "Generating genesis and validator keys..."
-docker compose -f docker-compose.genesis.yml --profile gen run --rm genesis-generator
+docker compose -f docker-compose.genesis.yml --profile gen run --rm --user 0 genesis-generator
 
 if [ ! -f genesis-out/genesis.json ]; then
   echo "Genesis generation failed"
