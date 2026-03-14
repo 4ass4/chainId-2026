@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DemoChain — дашборд</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui; margin: 0; padding: 2rem; background: #1a1a2e; color: #eee; }
+    h1 { font-size: 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .card { background: #16213e; border-radius: 8px; padding: 1.5rem; }
+    .value { font-size: 1.8rem; color: #e94560; }
+    .label { font-size: 0.9rem; opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <h1>DemoChain BY — дашборд</h1>
+  <div class="grid">
+    <div class="card"><span class="label">Block</span><div class="value" id="block">—</div></div>
+    <div class="card"><span class="label">Validators</span><div class="value" id="validators">—</div></div>
+    <div class="card"><span class="label">TPS (approx)</span><div class="value" id="tps">—</div></div>
+  </div>
+  <script>
+    const RPC = window.location.origin + '/rpc';
+    let prevBlock = 0, prevTime = 0;
+    async function fetchRpc(method, params) {
+      const r = await fetch(RPC, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', method, params: params || [], id: 1 }) });
+      const j = await r.json();
+      return j.result;
+    }
+    async function update() {
+      try {
+        const blockHex = await fetchRpc('eth_blockNumber');
+        const block = parseInt(blockHex, 16);
+        document.getElementById('block').textContent = block;
+        const vals = await fetchRpc('qbft_getValidatorsByBlockNumber', ['latest']);
+        document.getElementById('validators').textContent = vals?.length ?? '—';
+        const now = Date.now();
+        if (prevBlock && prevTime) {
+          const blocks = block - prevBlock;
+          const sec = (now - prevTime) / 1000;
+          document.getElementById('tps').textContent = sec > 0 ? (blocks / sec).toFixed(1) : '—';
+        }
+        prevBlock = block; prevTime = now;
+      } catch (e) {
+        document.getElementById('block').textContent = 'err';
+      }
+    }
+    update();
+    setInterval(update, 3000);
+  </script>
+</body>
+</html>

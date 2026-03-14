@@ -39,9 +39,10 @@ npx hardhat run scripts/deploy-token.js --network demochain
 
 (Ключ — pre-funded аккаунт из genesis, только для dev.)
 
-После токена — деплой Bridge:
+Деплой Bridge и Orders:
 ```bash
 npx hardhat run scripts/deploy-bridge.js --network demochain
+npx hardhat run scripts/deploy-orders.js --network demochain
 ```
 
 ## API + Bridge UI
@@ -53,7 +54,7 @@ export BRIDGE_PRIVATE_KEY=0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9e
 npm start
 ```
 
-Открыть http://localhost:3000 — кнопка «Bridge TON → CONS».
+Открыть http://localhost:3000 — Bridge, ордера; http://localhost:3000/dashboard.html — TPS, блоки, валидаторы.
 
 ## Blockscout
 
@@ -63,9 +64,17 @@ npm start
 - `ETHEREUM_JSONRPC_HTTP_URL=http://HOST:8545`
 - `INDEXER_DISABLE_PENDING_TRANSACTIONS_FETCHER=true`
 
+## Kill-тест
+
+```bash
+./scripts/kill-test.sh
+```
+
+Остановить besu-1 — блоки продолжают (8546, 8547, 8548). Запустить снова: `docker start besu-1`.
+
 ## Структура
 
-- `qbftConfigFile.json` — конфиг genesis (chainId 2026)
-- `scripts/setup-network.sh` — генерация genesis + ключей
-- `contracts/ConsortiumToken.sol` — ERC20 CONS
-- `scripts/deploy-token.js` — деплой и mint 1000 CONS
+- `qbftConfigFile.json`, `scripts/setup-network.sh` — genesis + 4 ноды
+- `contracts/` — ConsortiumToken, BridgeMock, OrdersContract
+- `scripts/deploy-*.js` — деплой контрактов
+- `api-demo/` — REST API, Bridge UI, ордера, дашборд

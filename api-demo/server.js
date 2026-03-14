@@ -16,6 +16,7 @@ const DEPLOYED_PATH = path.join(__dirname, '..', 'deployed.json');
 const MINT_AMOUNT = ethers.parseEther('100');
 
 let bridgeContract = null;
+let ordersContract = null;
 
 function loadDeployed() {
   if (!fs.existsSync(DEPLOYED_PATH)) return null;
@@ -29,8 +30,34 @@ function initBridge() {
   const signer = new ethers.Wallet(BRIDGE_PRIVATE_KEY, provider);
   const abi = ['function mintFromBridge(address to, uint256 amount) external'];
   bridgeContract = new ethers.Contract(deployed.BridgeMock, abi, signer);
+  if (deployed.OrdersContract) {
+    const ordersAbi = ['function executeOrder(string exchangeSell, string exchangeBuy, uint256 amount) external'];
+    ordersContract = new ethers.Contract(deployed.OrdersContract, ordersAbi, signer);
+  }
   return true;
 }
+
+app.post('/orders/execute', async (req, res) => {
+  const { exchangeSell, exchangeBuy, amount } = req.body;
+  if (!exchangeSell || !exchangeBuy || amount == null) {
+    return res.status(400).json({ error: 'exchangeSell, exchangeBuy, amount required' });
+  }
+  if (!ordersContract) {
+    return res.status(503).json({ error: 'Orders contract not configured' });
+  }
+  try {
+    const amt = BigInt(amount);
+    const tx = await ordersContract.executeOrder(exchangeSell, exchangeBuy, amt);
+    const receipt = await tx.wait();
+    return res.json({
+      success: true,
+      txHash: receipt.hash,
+      explorerUrl: `${process.env.EXPLORER_URL || 'http://localhost:4000'}/tx/${receipt.hash}`
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || 'Execute failed' });
+  }
+});
 
 app.post('/bridge/ton-to-cons', async (req, res) => {
   const { address } = req.body;
@@ -53,8 +80,18 @@ app.post('/bridge/ton-to-cons', async (req, res) => {
   }
 });
 
+app.post('/rpc', async (req, res) => {
+  try {
+    const r = await fetch(RPC_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req.body) });
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
 app.get('/health', (req, res) => {
-  res.json({ ok: true, bridge: !!bridgeContract });
+  res.json({ ok: true, bridge: !!bridgeContract, orders: !!ordersContract });
 });
 
 const port = process.env.PORT || 3000;
