@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "deploy:token": "node scripts/deploy-token.js",
+    "deploy:token": "hardhat run scripts/deploy-token.js --network demochain",
+    "deploy:bridge": "hardhat run scripts/deploy-bridge.js --network demochain",
     "compile": "hardhat compile"
   },
   "dependencies": {

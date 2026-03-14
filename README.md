@@ -39,6 +39,22 @@ npx hardhat run scripts/deploy-token.js --network demochain
 
 (Ключ — pre-funded аккаунт из genesis, только для dev.)
 
+После токена — деплой Bridge:
+```bash
+npx hardhat run scripts/deploy-bridge.js --network demochain
+```
+
+## API + Bridge UI
+
+```bash
+cd api-demo && npm install
+export RPC_URL=http://localhost:8545
+export BRIDGE_PRIVATE_KEY=0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3
+npm start
+```
+
+Открыть http://localhost:3000 — кнопка «Bridge TON → CONS».
+
 ## Blockscout
 
 Клонировать [blockscout/blockscout](https://github.com/blockscout/blockscout), в `docker-compose` задать:

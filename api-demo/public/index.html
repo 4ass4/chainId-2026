@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DemoChain BY — Bridge TON → CONS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 2rem; background: #1a1a2e; color: #eee; min-height: 100vh; }
+    h1 { font-size: 1.5rem; }
+    .card { background: #16213e; border-radius: 8px; padding: 1.5rem; max-width: 480px; margin: 1rem 0; }
+    input { width: 100%; padding: 0.5rem; margin: 0.5rem 0; border: 1px solid #0f3460; border-radius: 4px; background: #0f3460; color: #fff; }
+    button { background: #e94560; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    button:hover { background: #ff6b6b; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result { margin-top: 1rem; padding: 0.5rem; background: #0f3460; border-radius: 4px; font-size: 0.9rem; word-break: break-all; }
+    .link { color: #e94560; }
+  </style>
+</head>
+<body>
+  <h1>DemoChain BY — симуляция моста TON → CONS</h1>
+  <div class="card">
+    <p>Адрес получателя CONS:</p>
+    <input type="text" id="address" placeholder="0x..." value="">
+    <button id="bridge">Bridge TON → CONS (100 CONS)</button>
+    <div id="result" class="result" style="display:none;"></div>
+  </div>
+  <script>
+    const API = window.location.origin;
+    const addr = document.getElementById('address');
+    const btn = document.getElementById('bridge');
+    const result = document.getElementById('result');
+
+    if (window.ethereum) {
+      window.ethereum.request({ method: 'eth_requestAccounts' }).then(accs => {
+        if (accs[0]) addr.value = accs[0];
+      }).catch(() => {});
+    }
+
+    btn.onclick = async () => {
+      const address = addr.value.trim();
+      if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        result.textContent = 'Введите валидный адрес (0x...)';
+        result.style.display = 'block';
+        return;
+      }
+      btn.disabled = true;
+      result.textContent = 'Ожидание...';
+      result.style.display = 'block';
+      try {
+        const r = await fetch(`${API}/bridge/ton-to-cons`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address })
+        });
+        const data = await r.json();
+        if (data.success) {
+          result.innerHTML = `Tx: <a class="link" href="${data.explorerUrl}" target="_blank">${data.txHash}</a>`;
+        } else {
+          result.textContent = data.error || 'Ошибка';
+        }
+      } catch (e) {
+        result.textContent = 'Ошибка: ' + e.message;
+      }
+      btn.disabled = false;
+    };
+  </script>
+</body>
+</html>
