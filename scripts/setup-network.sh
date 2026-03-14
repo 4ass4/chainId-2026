@@ -5,6 +5,7 @@ cd "$PROJECT_ROOT"
 
 rm -rf networkFiles
 mkdir -p networkFiles
+chmod 777 networkFiles
 
 echo "Generating genesis and validator keys..."
 GEN_CONTAINER="besu-genesis-$$"

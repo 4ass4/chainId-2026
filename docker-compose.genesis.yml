@@ -1,14 +1,16 @@
+# Before run: mkdir -p networkFiles && chmod 777 networkFiles
 services:
   genesis-generator:
     image: hyperledger/besu:24.8.0
     user: "0"
+    entrypoint: []
     volumes:
-      - ./qbftConfigFile.json:/config/config.json:ro
+      - .:/workspace
       - ./networkFiles:/workspace/networkFiles
     working_dir: /workspace
     command: >
       besu operator generate-blockchain-config
-      --config-file=/config/config.json
+      --config-file=/workspace/qbftConfigFile.json
       --to=/workspace/networkFiles
       --private-key-file-name=key
     profiles:
