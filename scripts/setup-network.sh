@@ -3,31 +3,27 @@ set -e
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-rm -rf genesis-out
-mkdir -p genesis-out
+rm -rf networkFiles
 
 echo "Generating genesis and validator keys..."
-GEN_CONTAINER="besu-genesis-$$"
-docker run --name "$GEN_CONTAINER" \
-  -v "$(pwd)/qbftConfigFile.json:/config/config.json:ro" \
+docker run --rm --user 0 --entrypoint "" \
+  -v "$(pwd):/workspace" \
+  -w /workspace \
   hyperledger/besu:24.8.0 \
-  operator generate-blockchain-config \
-  --config-file=/config/config.json \
-  --to=/tmp/genesis-out \
+  besu operator generate-blockchain-config \
+  --config-file=/workspace/qbftConfigFile.json \
+  --to=/workspace/networkFiles \
   --private-key-file-name=key
 
-docker cp "$GEN_CONTAINER:/tmp/genesis-out/." ./genesis-out/
-docker rm "$GEN_CONTAINER" >/dev/null 2>&1
-
-if [ ! -f genesis-out/genesis.json ]; then
+if [ ! -f networkFiles/genesis.json ]; then
   echo "Genesis generation failed"
   exit 1
 fi
 
-cp genesis-out/genesis.json genesis.json
+cp networkFiles/genesis.json genesis.json
 
 mkdir -p node-1/data node-2/data node-3/data node-4/data
-KEYS_DIR="genesis-out/keys"
+KEYS_DIR="networkFiles/keys"
 idx=1
 for addr_dir in "$KEYS_DIR"/0x*; do
   if [ -d "$addr_dir" ] && [ -f "$addr_dir/key" ]; then
@@ -45,9 +41,6 @@ if [ $idx -ne 5 ]; then
   echo "Expected 4 validator keys, found $((idx - 1))"
   exit 1
 fi
-
-cp -r genesis-out networkFiles
-rm -rf genesis-out
 
 NODE1_PUBKEY=$(xxd -p -c 256 node-1/data/key.pub | tr -d '\n')
 echo "NODE1_ENODE=enode://${NODE1_PUBKEY}@besu-1:30303" > .env.besu

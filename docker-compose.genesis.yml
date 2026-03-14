@@ -1,2 +1,15 @@
-# Use scripts/setup-network.sh instead - run: ./scripts/setup-network.sh
-# This file kept for reference only.
+services:
+  genesis-generator:
+    image: hyperledger/besu:24.8.0
+    user: "0"
+    entrypoint: []
+    command: >
+      besu operator generate-blockchain-config
+      --config-file=/workspace/qbftConfigFile.json
+      --to=/workspace/networkFiles
+      --private-key-file-name=key
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    profiles:
+      - gen
