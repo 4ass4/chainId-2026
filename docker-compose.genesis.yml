@@ -5,7 +5,8 @@ services:
     user: root
     volumes:
       - .:/workspace
+      - ./genesis-out:/output
     working_dir: /workspace
-    command: operator generate-blockchain-config --config-file=/workspace/qbftConfigFile.json --to=/workspace/networkFiles --private-key-file-name=key
+    command: operator generate-blockchain-config --config-file=/workspace/qbftConfigFile.json --to=/output --private-key-file-name=key
     profiles:
       - gen

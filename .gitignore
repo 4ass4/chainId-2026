@@ -14,4 +14,5 @@ __pycache__/
 dist/
 build/
 networkFiles/
+genesis-out/
 node-*/data/

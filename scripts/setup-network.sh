@@ -3,18 +3,22 @@ set -e
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-mkdir -p networkFiles
-chmod 777 networkFiles
+rm -rf genesis-out
+mkdir -p genesis-out
+chmod 777 genesis-out
 
 echo "Generating genesis and validator keys..."
 docker compose -f docker-compose.genesis.yml --profile gen run --rm genesis-generator
 
-if [ ! -f networkFiles/genesis.json ]; then
+if [ ! -f genesis-out/genesis.json ]; then
   echo "Genesis generation failed"
   exit 1
 fi
 
-cp networkFiles/genesis.json genesis.json
+mkdir -p networkFiles
+cp -r genesis-out/* networkFiles/
+cp genesis-out/genesis.json genesis.json
+rm -rf genesis-out
 
 mkdir -p node-1/data node-2/data node-3/data node-4/data
 KEYS_DIR="networkFiles/keys"
