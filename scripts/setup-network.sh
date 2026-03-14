@@ -15,13 +15,10 @@ if [ ! -f genesis-out/genesis.json ]; then
   exit 1
 fi
 
-mkdir -p networkFiles
-cp -r genesis-out/* networkFiles/
 cp genesis-out/genesis.json genesis.json
-rm -rf genesis-out
 
 mkdir -p node-1/data node-2/data node-3/data node-4/data
-KEYS_DIR="networkFiles/keys"
+KEYS_DIR="genesis-out/keys"
 idx=1
 for addr_dir in "$KEYS_DIR"/0x*; do
   if [ -d "$addr_dir" ] && [ -f "$addr_dir/key" ]; then
@@ -39,6 +36,9 @@ if [ $idx -ne 5 ]; then
   echo "Expected 4 validator keys, found $((idx - 1))"
   exit 1
 fi
+
+cp -r genesis-out networkFiles
+rm -rf genesis-out
 
 NODE1_PUBKEY=$(xxd -p -c 256 node-1/data/key.pub | tr -d '\n')
 echo "NODE1_ENODE=enode://${NODE1_PUBKEY}@besu-1:30303" > .env.besu
