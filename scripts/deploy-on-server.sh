@@ -10,7 +10,8 @@ if [ -d "$BLOCKSCOUT_ROOT" ]; then
   cp "$PROJECT_ROOT/docs/blockscout-demochain.env" "$BLOCKSCOUT_ROOT/envs/common-blockscout.env"
   NGINX_YML="$BLOCKSCOUT_ROOT/services/nginx.yml"
   if [ -f "$NGINX_YML" ]; then
-    sed -i '0,/published: 80/s/published: 80/published: 4000/' "$NGINX_YML"
+    sed -i 's/published: 400080/published: 8080/g; s/published: 400081/published: 8081/g' "$NGINX_YML"
+    sed -i '0,/published: 80$/s/published: 80$/published: 4000/' "$NGINX_YML"
   fi
   (cd "$BLOCKSCOUT_ROOT" && docker compose up -d)
 fi
