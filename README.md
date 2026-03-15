@@ -70,7 +70,7 @@ export BRIDGE_PRIVATE_KEY=0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9e
 npm start
 ```
 
-Открыть http://localhost:3000 — Bridge, ордера; http://localhost:3000/dashboard.html — TPS, блоки, валидаторы.
+Открыть http://localhost:3013 — Bridge, ордера; http://localhost:3013/dashboard.html — TPS, блоки, валидаторы.
 
 ## Blockscout
 

@@ -94,7 +94,7 @@ app.get('/health', (req, res) => {
   res.json({ ok: true, bridge: !!bridgeContract, orders: !!ordersContract });
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3013;
 app.listen(port, () => {
   initBridge();
   console.log(`API demo on :${port}, bridge=${!!bridgeContract}`);
