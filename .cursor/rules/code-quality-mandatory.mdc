@@ -68,18 +68,13 @@ alwaysApply: true
 - **PM2-приложение API:** `demochain-api`
 - **deployed.json на сервере:** `/root/demochain/deployed.json`
 
-После пуша давать команды для деплоя на сервер (выполнять по порядку):
+После пуша давать команды для деплоя на сервер. Одна команда (на сервере после ssh):
 
-```
-ssh root@82.26.171.108
-cd /root/demochain
-git pull origin main
-pm2 restart demochain-api
+```bash
+ssh root@82.26.171.108 'cd /root/demochain && bash scripts/deploy-on-server.sh'
 ```
 
-Или одной строкой с хоста: `cd /root/demochain && git pull origin main && pm2 restart demochain-api`
-
-Если используется админка «Создание токена», на сервере перед рестартом выполнить: `npx hardhat compile` (чтобы был артефакт `artifacts/contracts/SimpleToken.sol/SimpleToken.json`).
+Скрипт сам: делает git pull, копирует env Blockscout, правит порт proxy на 4000 в services/nginx.yml, поднимает docker compose Blockscout, перезапускает demochain-api. Если админка «Создание токена» нужна — перед скриптом выполнить на сервере: `cd /root/demochain && npx hardhat compile`.
 
 ## 7. Перед фиксацией изменений
 
