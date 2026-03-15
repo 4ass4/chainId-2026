@@ -20,6 +20,8 @@
 ## Токен CONS
 
 После деплоя ConsortiumToken:
-- Адрес контракта: см. `deployed.json`
-- Символ: CONS
-- Decimals: 18
+- **Адрес контракта:** в `deployed.json` на сервере, поле `ConsortiumToken`. Узнать: `ssh root@82.26.171.108 "grep ConsortiumToken /root/demochain/deployed.json"`
+- **Символ:** CONS
+- **Decimals:** 18
+
+В MetaMask: Assets → Import tokens → вставить адрес контракта, CONS, 18.

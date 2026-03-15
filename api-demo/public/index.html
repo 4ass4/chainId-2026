@@ -17,7 +17,8 @@
     button { background: #e94560; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-size: 1rem; }
     button:hover { background: #ff6b6b; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .result { margin-top: 1rem; padding: 0.5rem; background: #0f3460; border-radius: 4px; font-size: 0.9rem; word-break: break-all; }
+    .result { margin-top: 1rem; padding: 0.75rem; background: #0f3460; border-radius: 4px; font-size: 0.9rem; word-break: break-all; }
+    .result .fee { margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.95; }
     .link { color: #e94560; }
   </style>
 </head>
@@ -58,6 +59,15 @@
       }).catch(() => {});
     }
 
+    function renderTxResult(data, el) {
+      if (data.success) {
+        const feeHtml = data.fee ? `<div class="fee">Комиссия: ${data.fee.feeEth} ETH (gas: ${data.fee.gasUsed})</div>` : '';
+        el.innerHTML = `Tx: <a class="link" href="${data.explorerUrl}" target="_blank">${data.txHash}</a>${feeHtml}`;
+      } else {
+        el.textContent = data.error || 'Ошибка';
+      }
+    }
+
     document.getElementById('execute').onclick = async () => {
       const orderResult = document.getElementById('orderResult');
       orderResult.textContent = 'Ожидание...';
@@ -69,11 +79,7 @@
           body: JSON.stringify({ exchangeSell: 'BYNEX', exchangeBuy: 'Currency', amount: '1000000000' })
         });
         const data = await r.json();
-        if (data.success) {
-          orderResult.innerHTML = `Tx: <a class="link" href="${data.explorerUrl}" target="_blank">${data.txHash}</a>`;
-        } else {
-          orderResult.textContent = data.error || 'Ошибка';
-        }
+        renderTxResult(data, orderResult);
       } catch (e) {
         orderResult.textContent = 'Ошибка: ' + e.message;
       }
@@ -96,11 +102,7 @@
           body: JSON.stringify({ address })
         });
         const data = await r.json();
-        if (data.success) {
-          result.innerHTML = `Tx: <a class="link" href="${data.explorerUrl}" target="_blank">${data.txHash}</a>`;
-        } else {
-          result.textContent = data.error || 'Ошибка';
-        }
+        renderTxResult(data, result);
       } catch (e) {
         result.textContent = 'Ошибка: ' + e.message;
       }

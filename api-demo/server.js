@@ -28,13 +28,32 @@ function initBridge() {
   if (!deployed?.ConsortiumToken || !BRIDGE_PRIVATE_KEY) return false;
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const signer = new ethers.Wallet(BRIDGE_PRIVATE_KEY, provider);
-  const tokenAbi = ['function mint(address to, uint256 amount) external'];
-  tokenContract = new ethers.Contract(deployed.ConsortiumToken, tokenAbi, signer);
+  tokenContract = new ethers.Contract(deployed.ConsortiumToken, ['function mint(address to, uint256 amount) external'], signer);
   if (deployed.OrdersContract) {
-    const ordersAbi = ['function executeOrder(string exchangeSell, string exchangeBuy, uint256 amount) external'];
-    ordersContract = new ethers.Contract(deployed.OrdersContract, ordersAbi, signer);
+    ordersContract = new ethers.Contract(deployed.OrdersContract, ['function executeOrder(string exchangeSell, string exchangeBuy, uint256 amount) external'], signer);
   }
   return true;
+}
+
+function feeFromReceipt(receipt, tx) {
+  const gasPrice = receipt.gasPrice ?? tx.gasPrice ?? 0n;
+  const feeWei = receipt.gasUsed * gasPrice;
+  return {
+    gasUsed: receipt.gasUsed.toString(),
+    gasPrice: gasPrice.toString(),
+    feeWei: feeWei.toString(),
+    feeEth: ethers.formatEther(feeWei)
+  };
+}
+
+function txSuccessPayload(receipt, tx) {
+  const explorerBase = process.env.EXPLORER_URL || 'http://localhost:4000';
+  return {
+    success: true,
+    txHash: receipt.hash,
+    explorerUrl: `${explorerBase}/tx/${receipt.hash}`,
+    fee: feeFromReceipt(receipt, tx)
+  };
 }
 
 app.post('/orders/execute', async (req, res) => {
@@ -49,11 +68,7 @@ app.post('/orders/execute', async (req, res) => {
     const amt = BigInt(amount);
     const tx = await ordersContract.executeOrder(exchangeSell, exchangeBuy, amt);
     const receipt = await tx.wait();
-    return res.json({
-      success: true,
-      txHash: receipt.hash,
-      explorerUrl: `${process.env.EXPLORER_URL || 'http://localhost:4000'}/tx/${receipt.hash}`
-    });
+    return res.json(txSuccessPayload(receipt, tx));
   } catch (e) {
     return res.status(500).json({ error: e.message || 'Execute failed' });
   }
@@ -70,11 +85,7 @@ app.post('/bridge/ton-to-cons', async (req, res) => {
   try {
     const tx = await tokenContract.mint(address, MINT_AMOUNT);
     const receipt = await tx.wait();
-    return res.json({
-      success: true,
-      txHash: receipt.hash,
-      explorerUrl: `${process.env.EXPLORER_URL || 'http://localhost:4000'}/tx/${receipt.hash}`
-    });
+    return res.json(txSuccessPayload(receipt, tx));
   } catch (e) {
     return res.status(500).json({ error: e.message || 'Bridge failed' });
   }
@@ -97,5 +108,4 @@ app.get('/health', (req, res) => {
 const port = process.env.PORT || 3013;
 app.listen(port, () => {
   initBridge();
-  console.log(`API demo on :${port}, bridge=${!!tokenContract}`);
 });
