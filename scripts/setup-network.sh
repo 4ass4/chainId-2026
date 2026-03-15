@@ -47,7 +47,10 @@ if [ $idx -ne 5 ]; then
   exit 1
 fi
 
-NODE1_PUBKEY=$(xxd -p -c 256 node-1/data/key.pub | tr -d '\n')
+NODE1_PUBKEY=$(xxd -p -c 256 node-1/data/key.pub | tr -d '\n' | sed 's/^0x//' | head -c 128)
+if [ ${#NODE1_PUBKEY} -ne 128 ]; then
+  echo "WARN: node ID length is ${#NODE1_PUBKEY}, expected 128. Fix .env with enode from: docker logs besu-1 2>&1 | grep Enode"
+fi
 echo "NODE1_ENODE=enode://${NODE1_PUBKEY}@besu-1:30303" > .env.besu
 echo "NODE1_ENODE=enode://${NODE1_PUBKEY}@besu-1:30303" > .env
 echo "Setup complete. Run: docker compose up -d"
