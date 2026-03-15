@@ -17,52 +17,31 @@ git clone --depth 1 https://github.com/blockscout/blockscout.git
 cd blockscout/docker-compose
 ```
 
-### 2. Настроить env: полный путь и что задать
+### 2. Настроить env: подставить полный файл
 
-**Файл с переменными бэкенда (полный путь на сервере):**
+В репозитории DemoChain BY лежит готовый env для DemoChain BY:
 
-```
-/root/blockscout/docker-compose/envs/common-blockscout.env
-```
+**Файл в репо:** `docs/blockscout-demochain.env`
 
-Открыть и задать (или дописать) строки:
-
-```env
-# RPC вашей ноды DemoChain BY (с хоста из контейнера — обычно 172.17.0.1)
-ETHEREUM_JSONRPC_HTTP_URL=http://172.17.0.1:8545
-ETHEREUM_JSONRPC_WS_URL=ws://172.17.0.1:8545
-
-# Сеть DemoChain BY
-CHAIN_ID=2026
-
-# Вариант RPC-клиента (Besu совместим с openethereum)
-ETHEREUM_JSONRPC_VARIANT=openethereum
-
-# Обязательно для работы
-API_V2_ENABLED=true
-
-# Ускорить старт (опционально)
-INDEXER_DISABLE_INTERNAL_TRANSACTIONS_FETCHER=true
-INDEXER_DISABLE_PENDING_TRANSACTIONS_FETCHER=true
-```
-
-Если `172.17.0.1` не подходит (контейнер не видит RPC), узнать IP шлюза:
+**На сервере:** скопировать его вместо стандартного env Blockscout:
 
 ```bash
-ip route | grep default | awk '{print $3}'
+# С хоста, где есть репо (или scp с локальной машины)
+cp /root/demochain/docs/blockscout-demochain.env /root/blockscout/docker-compose/envs/common-blockscout.env
 ```
 
-Подставить этот IP вместо `172.17.0.1` в `ETHEREUM_JSONRPC_HTTP_URL` и `ETHEREUM_JSONRPC_WS_URL`.
+Или с локального ПК (из каталога репо):
 
-**Если Besu и Blockscout в одной Docker-сети** (общий docker-compose или общая сеть), в том же файле указать:
-
-```env
-ETHEREUM_JSONRPC_HTTP_URL=http://besu-1:8545
-ETHEREUM_JSONRPC_WS_URL=ws://besu-1:8545
-CHAIN_ID=2026
-ETHEREUM_JSONRPC_VARIANT=openethereum
-API_V2_ENABLED=true
+```bash
+scp docs/blockscout-demochain.env root@82.26.171.108:/root/blockscout/docker-compose/envs/common-blockscout.env
 ```
+
+В файле уже подставлено:
+- RPC: `http://172.17.0.1:8545/` (доступ с контейнера к RPC на хосте)
+- `CHAIN_ID=2026`, `ETHEREUM_JSONRPC_VARIANT=openethereum`
+- `API_V2_ENABLED=true`, порт 4000, отключены лишние индексеры
+
+Если контейнер не достучится до RPC по `172.17.0.1`, узнать IP шлюза: `ip route | grep default | awk '{print $3}'` и в `common-blockscout.env` заменить `172.17.0.1` на этот IP в `ETHEREUM_JSONRPC_HTTP_URL` и `ETHEREUM_JSONRPC_TRACE_URL`.
 
 ### 3. Запуск
 
