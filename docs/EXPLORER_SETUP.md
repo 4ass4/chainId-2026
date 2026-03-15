@@ -17,45 +17,51 @@ git clone --depth 1 https://github.com/blockscout/blockscout.git
 cd blockscout/docker-compose
 ```
 
-### 2. Настроить подключение к вашей ноде
+### 2. Настроить env: полный путь и что задать
 
-RPC DemoChain BY на хосте: `http://82.26.171.108:8545` (или локально `http://127.0.0.1:8545`). Контейнеры Blockscout должны достучаться до этого порта.
+**Файл с переменными бэкенда (полный путь на сервере):**
 
-**Вариант A — контейнеры на том же хосте:**  
-Использовать доступ к хосту из Docker (Linux):
-
-```bash
-# Узнать IP шлюза хоста с точки зрения контейнера (часто 172.17.0.1)
-ip route | grep default | awk '{print $3}'
+```
+/root/blockscout/docker-compose/envs/common-blockscout.env
 ```
 
-Создать файл переопределения env (например `envs/demochain.env` или править `envs/common-blockscout.env`):
+Открыть и задать (или дописать) строки:
 
 ```env
+# RPC вашей ноды DemoChain BY (с хоста из контейнера — обычно 172.17.0.1)
 ETHEREUM_JSONRPC_HTTP_URL=http://172.17.0.1:8545
 ETHEREUM_JSONRPC_WS_URL=ws://172.17.0.1:8545
+
+# Сеть DemoChain BY
 CHAIN_ID=2026
+
+# Вариант RPC-клиента (Besu совместим с openethereum)
 ETHEREUM_JSONRPC_VARIANT=openethereum
+
+# Обязательно для работы
 API_V2_ENABLED=true
+
+# Ускорить старт (опционально)
 INDEXER_DISABLE_INTERNAL_TRANSACTIONS_FETCHER=true
 INDEXER_DISABLE_PENDING_TRANSACTIONS_FETCHER=true
 ```
 
-Если в Docker настроен `host.docker.internal`:
+Если `172.17.0.1` не подходит (контейнер не видит RPC), узнать IP шлюза:
 
-```env
-ETHEREUM_JSONRPC_HTTP_URL=http://host.docker.internal:8545
-ETHEREUM_JSONRPC_WS_URL=ws://host.docker.internal:8545
-CHAIN_ID=2026
+```bash
+ip route | grep default | awk '{print $3}'
 ```
 
-**Вариант B — Besu и Blockscout в одной Docker-сети:**  
-Если Blockscout будет в одном `docker-compose` с Besu (или в сети, где есть контейнер с RPC), укажите имя сервиса вместо IP, например:
+Подставить этот IP вместо `172.17.0.1` в `ETHEREUM_JSONRPC_HTTP_URL` и `ETHEREUM_JSONRPC_WS_URL`.
+
+**Если Besu и Blockscout в одной Docker-сети** (общий docker-compose или общая сеть), в том же файле указать:
 
 ```env
 ETHEREUM_JSONRPC_HTTP_URL=http://besu-1:8545
 ETHEREUM_JSONRPC_WS_URL=ws://besu-1:8545
 CHAIN_ID=2026
+ETHEREUM_JSONRPC_VARIANT=openethereum
+API_V2_ENABLED=true
 ```
 
 ### 3. Запуск
@@ -70,14 +76,18 @@ docker compose up -d
 
 ### 4. Порт и URL
 
-По умолчанию веб-интерфейс Blockscout слушает порт **80**. Чтобы отдать порт **4000** на хосте, в `docker-compose` у сервиса proxy (nginx) задайте:
+По умолчанию веб-интерфейс Blockscout слушает порт **80**. Чтобы открыть эксплорер на порту **4000**, в файле:
+
+**Полный путь:** `/root/blockscout/docker-compose/docker-compose.yml`
+
+Найти сервис **proxy** (nginx) и в нём секцию `ports` задать:
 
 ```yaml
 ports:
   - "4000:80"
 ```
 
-Тогда эксплорер будет доступен по адресу: **http://82.26.171.108:4000** (или ваш домен).
+Сохранить файл. После `docker compose up -d` эксплорер будет доступен по адресу: **http://82.26.171.108:4000** (или ваш домен).
 
 ### 5. Ссылки на транзакции и контракты
 
@@ -88,13 +98,12 @@ ports:
 
 ### 6. Переменная для API (опционально)
 
-Чтобы в ответах API (мост, админка) подставлялась ссылка на эксплорер, на сервере в окружении процесса API задайте:
+Чтобы в ответах API (мост, админка) подставлялась ссылка на эксплорер, в окружении процесса **demochain-api** задать:
 
-```env
-EXPLORER_URL=http://82.26.171.108:4000
-```
+- **Где:** в PM2 (например `pm2 set demochain-api EXPLORER_URL "http://82.26.171.108:4000"`) или в env-файле/скрипте запуска.
+- **Что задать:** `EXPLORER_URL=http://82.26.171.108:4000` (или ваш домен).
 
-(или ваш домен). Тогда в ответе будет `explorerUrl: "http://82.26.171.108:4000/tx/..."`.
+Тогда в ответе будет `explorerUrl: "http://82.26.171.108:4000/tx/..."`.
 
 ## Итог
 
