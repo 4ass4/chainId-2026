@@ -9,6 +9,22 @@ git clone https://github.com/4ass4/chainId-2026.git
 cd chainId-2026
 chmod +x scripts/setup-network.sh
 ./scripts/setup-network.sh
+docker compose up -d besu-1
+sleep 5
+BESU1_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' besu-1)
+ENODE=$(docker logs besu-1 2>&1 | grep -o 'enode://[^@]*@' | head -1)
+echo "NODE1_ENODE=${ENODE}${BESU1_IP}:30303" > .env
+docker compose up -d
+```
+
+Если уже запускали `docker compose up -d` и ноды 2–4 падают с «Invalid ip address», сделайте:
+```bash
+docker compose down
+docker compose up -d besu-1
+sleep 5
+BESU1_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' besu-1)
+ENODE=$(docker logs besu-1 2>&1 | grep -o 'enode://[^@]*@' | head -1)
+echo "NODE1_ENODE=${ENODE}${BESU1_IP}:30303" > .env
 docker compose up -d
 ```
 
