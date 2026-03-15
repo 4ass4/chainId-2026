@@ -15,7 +15,7 @@ const DEPLOYED_PATH = path.join(__dirname, '..', 'deployed.json');
 
 const MINT_AMOUNT = ethers.parseEther('100');
 
-let bridgeContract = null;
+let tokenContract = null;
 let ordersContract = null;
 
 function loadDeployed() {
@@ -25,11 +25,11 @@ function loadDeployed() {
 
 function initBridge() {
   const deployed = loadDeployed();
-  if (!deployed?.BridgeMock || !BRIDGE_PRIVATE_KEY) return false;
+  if (!deployed?.ConsortiumToken || !BRIDGE_PRIVATE_KEY) return false;
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const signer = new ethers.Wallet(BRIDGE_PRIVATE_KEY, provider);
-  const abi = ['function mintFromBridge(address to, uint256 amount) external'];
-  bridgeContract = new ethers.Contract(deployed.BridgeMock, abi, signer);
+  const tokenAbi = ['function mint(address to, uint256 amount) external'];
+  tokenContract = new ethers.Contract(deployed.ConsortiumToken, tokenAbi, signer);
   if (deployed.OrdersContract) {
     const ordersAbi = ['function executeOrder(string exchangeSell, string exchangeBuy, uint256 amount) external'];
     ordersContract = new ethers.Contract(deployed.OrdersContract, ordersAbi, signer);
@@ -64,11 +64,11 @@ app.post('/bridge/ton-to-cons', async (req, res) => {
   if (!address || !ethers.isAddress(address)) {
     return res.status(400).json({ error: 'Invalid address' });
   }
-  if (!bridgeContract) {
+  if (!tokenContract) {
     return res.status(503).json({ error: 'Bridge not configured' });
   }
   try {
-    const tx = await bridgeContract.mintFromBridge(address, MINT_AMOUNT);
+    const tx = await tokenContract.mint(address, MINT_AMOUNT);
     const receipt = await tx.wait();
     return res.json({
       success: true,
@@ -91,11 +91,11 @@ app.post('/rpc', async (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ ok: true, bridge: !!bridgeContract, orders: !!ordersContract });
+  res.json({ ok: true, bridge: !!tokenContract, orders: !!ordersContract });
 });
 
 const port = process.env.PORT || 3013;
 app.listen(port, () => {
   initBridge();
-  console.log(`API demo on :${port}, bridge=${!!bridgeContract}`);
+  console.log(`API demo on :${port}, bridge=${!!tokenContract}`);
 });
