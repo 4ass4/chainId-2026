@@ -49,4 +49,5 @@ fi
 
 NODE1_PUBKEY=$(xxd -p -c 256 node-1/data/key.pub | tr -d '\n')
 echo "NODE1_ENODE=enode://${NODE1_PUBKEY}@besu-1:30303" > .env.besu
+echo "NODE1_ENODE=enode://${NODE1_PUBKEY}@besu-1:30303" > .env
 echo "Setup complete. Run: docker compose up -d"
