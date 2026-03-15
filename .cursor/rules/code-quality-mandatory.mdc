@@ -55,19 +55,29 @@ alwaysApply: true
 
 - Весь код пишется и правится **локально** агентом.
 - **Репозиторий:** https://github.com/4ass4/chainId-2026
-- **Сервер:** root@215814 (Linux Debian 12, работа под root)
 - **Агент сам** выполняет все Git-команды после каждой правки:
   1. `git add .`
   2. `git commit -m "описание изменений"`
   3. `git push origin main`
 - При первом запуске — настроить remote: `git remote add origin https://github.com/4ass4/chainId-2026.git` (если ещё не задан).
-- После пуша — давать **команды для деплоя на сервер**, например:
-  ```
-  ssh root@215814
-  cd /root  # или путь к проекту
-  git pull origin main
-  docker compose pull && docker compose up -d
-  ```
+
+### Сервер: полные пути и деплой
+
+- **Хост:** `root@82.26.171.108` (Linux Debian 12, работа под root).
+- **Каталог проекта на сервере:** `/root/demochain`
+- **PM2-приложение API:** `demochain-api`
+- **deployed.json на сервере:** `/root/demochain/deployed.json`
+
+После пуша давать команды для деплоя на сервер (выполнять по порядку):
+
+```
+ssh root@82.26.171.108
+cd /root/demochain
+git pull origin main
+pm2 restart demochain-api
+```
+
+Или одной строкой с хоста: `cd /root/demochain && git pull origin main && pm2 restart demochain-api`
 
 ## 7. Перед фиксацией изменений
 
