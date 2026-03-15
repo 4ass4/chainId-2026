@@ -2,6 +2,13 @@
 
 Blockscout — блок-эксплорер для EVM-сетей. Позволяет смотреть блоки, транзакции и контракты по адресу (в т.ч. токены) в браузере.
 
+> **Важно:** эксплорер открывайте **в браузере** по адресу **http://82.26.171.108:4000** (или ваш домен). Адрес **127.0.0.1** в документации используется только для команд, которые выполняются **на сервере** (по SSH); в браузере на вашем ПК 127.0.0.1 не откроется — там ничего не запущено.
+
+**Порты на сервере:**
+- **3013** — ваш API (demochain-api, PM2).
+- **4000** — эксплорер Blockscout (доступ в браузере: http://IP:4000).
+- **3000** — внутри контейнера frontend слушает только 3000; nginx обращается к нему по внутренней сети. Контейнер **не должен** публиковать порт 3000 на хост (иначе конфликт с другим приложением на 3000). См. ниже раздел «Не занимать порт 3000 на хосте».
+
 ## Требования
 
 - На сервере уже запущены Besu (RPC на порту 8545) и API.
@@ -45,7 +52,7 @@ scp docs/blockscout-demochain.env root@82.26.171.108:/root/blockscout/docker-com
 
 ### 2b. Env фронта (чтобы на главной были блоки и транзакции)
 
-Если на главной странице эксплорера «No data» при том что `curl http://127.0.0.1:4000/api/v2/blocks?limit=3` на сервере возвращает данные, браузер обращается к API по неправильному хосту. Нужно задать для фронта тот же хост и порт, по которым открывают эксплорер:
+Если на главной странице эксплорера «No data», но по SSH на сервере команда `curl http://127.0.0.1:4000/api/v2/blocks?limit=3` возвращает данные, значит браузер обращается к API по неправильному хосту. Нужно задать для фронта тот же хост и порт, по которым открывают эксплорер:
 
 **Файл в репо:** `docs/blockscout-frontend-demochain.env`
 
@@ -61,7 +68,7 @@ cp /root/demochain/docs/blockscout-frontend-demochain.env /root/blockscout/docke
 scp docs/blockscout-frontend-demochain.env root@82.26.171.108:/root/blockscout/docker-compose/envs/common-frontend.env
 ```
 
-В файле заданы `NEXT_PUBLIC_APP_HOST` и `NEXT_PUBLIC_API_HOST=82.26.171.108`, порт 4000 — запросы из браузера пойдут на тот же origin, nginx проксирует `/api` на бэкенд.
+В файле заданы `NEXT_PUBLIC_APP_HOST` и `NEXT_PUBLIC_API_HOST=82.26.171.108`, порт 4000, а также отключена реклама Blockscout (`NEXT_PUBLIC_AD_BANNER_PROVIDER=none`, `NEXT_PUBLIC_AD_TEXT_PROVIDER=none`) — в вашем эксплорере не будет сторонних баннеров и текстовых объявлений.
 
 После копирования пересоздать контейнер фронта и перезапустить стек:
 
@@ -99,6 +106,19 @@ ports:
 
 Сохранить файл. После `docker compose up -d` эксплорер будет доступен по адресу: **http://82.26.171.108:4000** (или ваш домен).
 
+### 4b. Не занимать порт 3000 на хосте
+
+Контейнер frontend слушает порт 3000 **внутри** Docker; к нему обращается только nginx (proxy). На хосте порт 3000 не нужен и не должен использоваться Blockscout — иначе конфликт с другим приложением (у вас API на 3013, но 3000 может быть занят чем-то ещё).
+
+Проверьте файл **`/root/blockscout/docker-compose/services/frontend.yml`**. Если в сервисе `frontend` есть секция `ports:` с маппингом на 3000 (например `- "3000:3000"` или `- "0.0.0.0:3000:3000"`), её нужно **удалить или закомментировать**. После правки:
+
+```bash
+cd /root/blockscout/docker-compose
+docker compose up -d frontend
+```
+
+Снаружи эксплорер по-прежнему открывается только по **порту 4000** (через proxy).
+
 ### 5. Ссылки на транзакции и контракты
 
 - Транзакция: `http://82.26.171.108:4000/tx/0x833d1ef...`
@@ -124,3 +144,77 @@ ports:
 | Контракт/токен | http://IP:4000/address/0x... |
 
 Официальная документация: https://docs.blockscout.com/setup/deployment/docker-compose-deployment
+
+---
+
+## 502 Bad Gateway (nginx)
+
+Ошибка значит: nginx работает, но не может достучаться до backend или frontend. Выполните **на сервере по SSH**:
+
+```bash
+cd /root/blockscout/docker-compose
+docker compose ps
+```
+
+- Все сервисы должны быть в состоянии **Up** (не Exit, не Restarting). Если **backend** или **frontend** упали — смотрите логи:
+  ```bash
+  docker compose logs backend --tail 100
+  docker compose logs frontend --tail 50
+  ```
+- Часто backend падает из‑за БД (не готова) или RPC (не доступен с контейнера). Проверьте:
+  ```bash
+  curl -s -o /dev/null -w "%{http_code}" http://172.17.0.1:8545 -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+  ```
+  Должен вернуться `200`. Если нет — в `envs/common-blockscout.env` проверьте `ETHEREUM_JSONRPC_HTTP_URL` (для доступа с контейнера к RPC на хосте обычно `http://172.17.0.1:8545/` или IP шлюза Docker).
+
+Поднять всё заново и подождать 1–2 минуты (индексер запускается):
+
+```bash
+cd /root/blockscout/docker-compose
+docker compose down
+docker compose up -d
+sleep 90
+curl -s "http://127.0.0.1:4000/api/v2/blocks?limit=1" | head -c 300
+```
+
+Если после этого по-прежнему 502 — пришлите вывод `docker compose ps` и последние строки `docker compose logs backend`.
+
+**В логах proxy видно `upstream: "http://172.x.x.x:3000/"` и "Connection refused" или "No route to host".**  
+Это значит: nginx не достучался до **frontend** (порт 3000). Контейнер frontend либо перезапускается (новый IP), либо ещё не слушает 3000. Сделайте по порядку:
+
+```bash
+cd /root/blockscout/docker-compose
+# Почему падает фронт (если падает)
+docker compose logs frontend --tail 80
+# Поднять фронт, подождать пока поднимется, перезапустить proxy чтобы nginx подхватил актуальный IP фронта
+docker compose up -d frontend
+sleep 25
+docker compose restart proxy
+```
+Через 10–15 сек откройте в браузере http://82.26.171.108:4000. Если frontend снова перезапускается — смотрите логи (`docker compose logs frontend`), возможны нехватка памяти (OOM) или ошибка в env.
+
+---
+
+## Если на главной всё ещё «No data»
+
+**Чеклист на сервере (выполнить по порядку):**
+
+```bash
+# 1. Обновить репо и скопировать оба env
+cd /root/demochain && git pull origin main
+cp /root/demochain/docs/blockscout-demochain.env /root/blockscout/docker-compose/envs/common-blockscout.env
+cp /root/demochain/docs/blockscout-frontend-demochain.env /root/blockscout/docker-compose/envs/common-frontend.env
+
+# 2. Убедиться, что порт proxy 4000 (в services/nginx.yml: published: 4000)
+# 3. Пересоздать фронт и поднять стек
+cd /root/blockscout/docker-compose
+docker compose up -d --force-recreate frontend
+
+# 4. На сервере проверить, что API отдаёт блоки (этот curl выполнять по SSH на сервере, не в браузере)
+curl -s "http://127.0.0.1:4000/api/v2/blocks?limit=1" | head -c 200
+```
+
+Если `curl` возвращает JSON с блоками, а в браузере по-прежнему «No data»:
+
+- Откройте эксплорер в браузере, F12 → вкладка **Network** (Сеть), обновите страницу.
+- Найдите запрос к `blocks`, `stats` или `transactions` — посмотрите **Request URL**. Если там не `http://82.26.171.108:4000/...`, а другой домен (например `blockscout.com`), образ фронта собран с зашитым API host; переменные из `common-frontend.env` в этом случае не подхватываются при запуске. Решение: пересобрать образ фронта Blockscout с нужным env (см. репозиторий blockscout/blockscout и сборку frontend) или использовать образ, собранный с вашим `NEXT_PUBLIC_API_HOST`.
