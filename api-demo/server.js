@@ -11,7 +11,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const RPC_URL = process.env.RPC_URL || 'http://localhost:8545';
 const BRIDGE_PRIVATE_KEY = process.env.BRIDGE_PRIVATE_KEY;
+const ADMIN_SECRET = process.env.ADMIN_SECRET;
 const DEPLOYED_PATH = path.join(__dirname, '..', 'deployed.json');
+const SIMPLETOKEN_ARTIFACT_PATH = path.join(__dirname, '..', 'artifacts', 'contracts', 'SimpleToken.sol', 'SimpleToken.json');
 
 const MINT_AMOUNT = ethers.parseEther('100');
 
@@ -103,6 +105,59 @@ app.post('/rpc', async (req, res) => {
 
 app.get('/health', (req, res) => {
   res.json({ ok: true, bridge: !!tokenContract, orders: !!ordersContract });
+});
+
+function requireAdmin(req, res) {
+  if (!ADMIN_SECRET) return true;
+  const key = req.headers['x-admin-key'];
+  if (key !== ADMIN_SECRET) {
+    res.status(401).json({ error: 'Invalid or missing X-Admin-Key' });
+    return false;
+  }
+  return true;
+}
+
+app.post('/admin/deploy-token', async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  if (!BRIDGE_PRIVATE_KEY) {
+    return res.status(503).json({ error: 'Deployer key not configured' });
+  }
+  const { name, symbol, decimals, initialSupply } = req.body;
+  if (!name || !symbol || decimals == null) {
+    return res.status(400).json({ error: 'name, symbol, decimals required' });
+  }
+  const dec = Number(decimals);
+  if (dec < 0 || dec > 18) {
+    return res.status(400).json({ error: 'decimals must be 0–18' });
+  }
+  if (!fs.existsSync(SIMPLETOKEN_ARTIFACT_PATH)) {
+    return res.status(503).json({ error: 'SimpleToken not compiled. Run: npx hardhat compile' });
+  }
+  try {
+    const artifact = JSON.parse(fs.readFileSync(SIMPLETOKEN_ARTIFACT_PATH, 'utf8'));
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    const signer = new ethers.Wallet(BRIDGE_PRIVATE_KEY, provider);
+    const supply = initialSupply != null && String(initialSupply).trim() !== ''
+      ? ethers.parseUnits(String(initialSupply).trim(), dec)
+      : 0n;
+    const factory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, signer);
+    const token = await factory.deploy(name, symbol, dec, signer.address, supply);
+    const receipt = await token.deploymentTransaction().wait();
+    const contractAddress = await token.getAddress();
+    const deployed = loadDeployed() || {};
+    deployed.tokens = deployed.tokens || [];
+    deployed.tokens.push({ name, symbol, decimals: dec, address: contractAddress });
+    fs.writeFileSync(DEPLOYED_PATH, JSON.stringify(deployed, null, 2));
+    return res.json({
+      success: true,
+      address: contractAddress,
+      txHash: receipt.hash,
+      explorerUrl: `${process.env.EXPLORER_URL || 'http://localhost:4000'}/tx/${receipt.hash}`,
+      fee: feeFromReceipt(receipt, token.deploymentTransaction())
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || 'Deploy failed' });
+  }
 });
 
 const port = process.env.PORT || 3013;

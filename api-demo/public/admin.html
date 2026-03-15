@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Админ — создание токена | DemoChain BY</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 2rem; background: #1a1a2e; color: #eee; min-height: 100vh; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.1rem; margin-top: 2rem; }
+    .card { background: #16213e; border-radius: 8px; padding: 1.5rem; max-width: 560px; margin: 1rem 0; }
+    input { width: 100%; padding: 0.5rem; margin: 0.5rem 0; border: 1px solid #0f3460; border-radius: 4px; background: #0f3460; color: #fff; }
+    label { display: block; margin-top: 0.75rem; font-size: 0.9rem; opacity: 0.9; }
+    button { background: #e94560; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-size: 1rem; margin-top: 1rem; }
+    button:hover { background: #ff6b6b; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result { margin-top: 1rem; padding: 0.75rem; background: #0f3460; border-radius: 4px; font-size: 0.9rem; word-break: break-all; }
+    .result .fee { margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.95; }
+    .link { color: #e94560; }
+    .back { margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="back"><a href="/" style="color:#e94560">← Главная</a></div>
+  <h1>Админ: создание токена</h1>
+  <p>Деплой нового ERC‑20 токена в сеть DemoChain BY. Минтер — адрес деплоера.</p>
+
+  <div class="card">
+    <label>Название токена</label>
+    <input type="text" id="name" placeholder="My Token" value="">
+    <label>Символ</label>
+    <input type="text" id="symbol" placeholder="MTK" value="">
+    <label>Decimals (0–18)</label>
+    <input type="number" id="decimals" min="0" max="18" value="18">
+    <label>Начальный supply (опционально, число единиц)</label>
+    <input type="text" id="initialSupply" placeholder="1000000 или пусто">
+    <label>Ключ админа (если задан ADMIN_SECRET на сервере)</label>
+    <input type="password" id="adminKey" placeholder="X-Admin-Key">
+    <button id="deploy">Создать токен</button>
+    <div id="result" class="result" style="display:none;"></div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+    const resultEl = document.getElementById('result');
+
+    document.getElementById('deploy').onclick = async () => {
+      const name = document.getElementById('name').value.trim();
+      const symbol = document.getElementById('symbol').value.trim();
+      const decimals = document.getElementById('decimals').value.trim();
+      const initialSupply = document.getElementById('initialSupply').value.trim();
+      const adminKey = document.getElementById('adminKey').value.trim();
+
+      if (!name || !symbol || decimals === '') {
+        resultEl.textContent = 'Укажите название, символ и decimals.';
+        resultEl.style.display = 'block';
+        return;
+      }
+      const dec = parseInt(decimals, 10);
+      if (dec < 0 || dec > 18) {
+        resultEl.textContent = 'Decimals от 0 до 18.';
+        resultEl.style.display = 'block';
+        return;
+      }
+
+      const btn = document.getElementById('deploy');
+      btn.disabled = true;
+      resultEl.textContent = 'Деплой...';
+      resultEl.style.display = 'block';
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (adminKey) headers['X-Admin-Key'] = adminKey;
+
+      try {
+        const body = { name, symbol, decimals: dec };
+        if (initialSupply !== '') body.initialSupply = initialSupply;
+        const r = await fetch(`${API}/admin/deploy-token`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (data.success) {
+          const fee = data.fee ? `<div class="fee">Комиссия: ${data.fee.feeEth} ETH (gas: ${data.fee.gasUsed})</div>` : '';
+          resultEl.innerHTML = `Токен задеплоен.<br>Адрес контракта: <a class="link" href="${data.explorerUrl}" target="_blank">${data.address}</a><br>Tx: <a class="link" href="${data.explorerUrl}" target="_blank">${data.txHash}</a>${fee}`;
+        } else {
+          resultEl.textContent = data.error || 'Ошибка';
+        }
+      } catch (e) {
+        resultEl.textContent = 'Ошибка: ' + e.message;
+      }
+      btn.disabled = false;
+    };
+  </script>
+</body>
+</html>

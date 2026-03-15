@@ -79,6 +79,8 @@ pm2 restart demochain-api
 
 Или одной строкой с хоста: `cd /root/demochain && git pull origin main && pm2 restart demochain-api`
 
+Если используется админка «Создание токена», на сервере перед рестартом выполнить: `npx hardhat compile` (чтобы был артефакт `artifacts/contracts/SimpleToken.sol/SimpleToken.json`).
+
 ## 7. Перед фиксацией изменений
 
 1. Убедиться, что изменения не ломают существующий функционал.
