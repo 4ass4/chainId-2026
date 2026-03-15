@@ -9,6 +9,7 @@ cache/
 .DS_Store
 .idea/
 .vscode/
+.cursor/
 __pycache__/
 *.pyc
 dist/
