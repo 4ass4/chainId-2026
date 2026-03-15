@@ -3,6 +3,7 @@ services:
     image: hyperledger/besu:24.8.0
     container_name: besu-1
     hostname: besu-1
+    user: "0"
     ports:
       - "8545:8545"
       - "30303:30303"
@@ -28,6 +29,7 @@ services:
     image: hyperledger/besu:24.8.0
     container_name: besu-2
     hostname: besu-2
+    user: "0"
     ports:
       - "8546:8545"
       - "30304:30303"
@@ -59,6 +61,7 @@ services:
     image: hyperledger/besu:24.8.0
     container_name: besu-3
     hostname: besu-3
+    user: "0"
     ports:
       - "8547:8545"
       - "30305:30303"
@@ -90,6 +93,7 @@ services:
     image: hyperledger/besu:24.8.0
     container_name: besu-4
     hostname: besu-4
+    user: "0"
     ports:
       - "8548:8545"
       - "30306:30303"
